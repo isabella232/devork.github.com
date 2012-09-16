@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Devork]]></title>
+  <link href="http://devork.github.com/atom.xml" rel="self"/>
+  <link href="http://devork.github.com/"/>
+  <updated>2012-09-16T09:35:50+01:00</updated>
+  <id>http://devork.github.com/</id>
+  <author>
+    <name><![CDATA[Alex Davies-Moore]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Hillshading with Ordnance Survey Panorama Data]]></title>
+    <link href="http://devork.github.com/blog/2012/09/01/hillshading-with-ordnance-survey-panorama-data/"/>
+    <updated>2012-09-01T15:27:00+01:00</updated>
+    <id>http://devork.github.com/blog/2012/09/01/hillshading-with-ordnance-survey-panorama-data</id>
+    <content type="html"><![CDATA[<p>This is a guide to creating some nice hillshaded GeoTIFFs using the Ordnance Survey Panorama Opendata. This example will run through a single tile of data — in this case SZ which contains some nice hills plus coastline. Throughout this guide we’ll be using EPSG:27700 as the SRS but obviously, others can be used (for Google Maps et al - EPSG:3857). All data can be downloaded from the <a href="https://www.ordnancesurvey.co.uk/opendatadownload/products.html">Ordnance Survey website</a>.</p>
+
+<!-- more -->
+
+
+<p>For this recipe, you will need the following:</p>
+
+<ul>
+<li>The Vector Map District SZ land data shape file - SZ_Land.shp</li>
+<li>The OS Panorama datasets for SZ</li>
+</ul>
+
+
+<p>Firstly, from Panorama, create some initial GeoTiffs from the ESRI ASCII files, for example:</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"></pre></td><td class='code'><pre><code class='bash'><span class='line'>gdal_translate -a_srs EPSG:27700 sz88.asc sz88.tiff
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The following bash script will do the lot in one directory:</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"></pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="k">for </span>i in <span class="sb">`</span>ls *asc<span class="sb">`</span>; <span class="k">do </span>gdal_translate -a_srs EPSG:27700 <span class="nv">$i</span> <span class="nv">$i</span>.tiff ; <span class="k">done</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Now we merge the tiffs into one single image:</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"></pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">TIFFS</span><span class="o">=</span><span class="s1">&#39;&#39;</span>
+</span><span class='line'><span class="k">for </span>i in <span class="sb">`</span>ls *.tiff<span class="sb">`</span>; <span class="k">do </span><span class="nv">TIFFS</span><span class="o">=</span><span class="s2">&quot;$i &quot;</span><span class="nv">$TIFFS</span> ; <span class="k">done</span>
+</span><span class='line'>gdal_merge.py -o merged.tiff <span class="nv">$TIFFS</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>At this point, you can open up the tiff to see something not very interesting, but you should be able to see stuff. If you open in an image editor, be careful not to save it back as it overwrite the geo information stored in the metadata.</p>
+
+<p>The next step is to do some data resampling (<a href="http://alastaira.wordpress.com/2011/07/20/creating-hill-shaded-tile-overlays/">Creating Hillshaded Tile Overlays</a>)</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"></pre></td><td class='code'><pre><code class='bash'><span class='line'>gdalwarp <span class="se">\ </span>
+</span><span class='line'>  -dstnodata 0 <span class="se">\</span>
+</span><span class='line'>  -tr 7 7 <span class="se">\</span>
+</span><span class='line'>  -r cubicspline <span class="se">\</span>
+</span><span class='line'>  -multi -co <span class="s2">&quot;TILED=YES&quot;</span> <span class="se">\</span>
+</span><span class='line'>  merged.tiff merged.res.tiff
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Once we’ve created the higher resolution data, we run the hillshade</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"></pre></td><td class='code'><pre><code class='bash'><span class='line'>gdaldem hillshade merged.res.tiff merged.res.hs.tiff
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>You can now open the new tiff and see some lovely hillshading, although, we still need to remove the sea from the result. We do this by clipping to the coastline using our shape file (<a href="http://www.mikejcorey.com/wordpress/2011/02/05/tutorial-create-beautiful-hillshade-maps-from-digital-elevation-models-with-gdal-and-mapnik/">Create beautiful hillshade maps from digital elevation models with GDAL and Mapnik</a>).</p>
+
+<p>First off, we get the extent of the shapefile:</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"></pre></td><td class='code'><pre><code class='bash'><span class='line'>ogrinfo -al SZ_Land.shp
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>And using the extent info (for SZ should look like Extent: (400000.000000, 75255.528637) - (499024.062190, 100000.000000)) we trim the tiff:</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"></pre></td><td class='code'><pre><code class='bash'><span class='line'>gdal_translate <span class="se">\</span>
+</span><span class='line'>  -projwin 400000.000000 100000.000000 499024.062190 75255.528637 <span class="se">\</span>
+</span><span class='line'>  merged.res.hs.tiff merged.res.box.tiff
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Be aware of the order for the -projwin parameter - its not the same as reported by the extent! It requires the NW -> SE points as opposed to SW -> NE.</p>
+
+<p>And finally, the alpha:</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"></pre></td><td class='code'><pre><code class='bash'><span class='line'>gdalwarp -dstalpha -srcnodata 0 merged.res.box.tiff merged.res.hs.final.tiff
+</span></code></pre></td></tr></table></div></figure>
+
+]]></content>
+  </entry>
+  
+</feed>

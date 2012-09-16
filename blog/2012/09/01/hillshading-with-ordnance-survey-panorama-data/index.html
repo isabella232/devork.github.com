@@ -1,0 +1,209 @@
+
+<!DOCTYPE HTML>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Hillshading with Ordnance Survey Panorama Data - Devork</title>
+	<meta name="author" content="Alex Davies-Moore">
+
+	
+	<meta name="description" content="This is a guide to creating some nice hillshaded GeoTIFFs using the Ordnance Survey Panorama Opendata. This example will run through a single tile of &hellip;">
+	
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+	<link href="/atom.xml" rel="alternate" title="Devork" type="application/atom+xml">
+	<link rel="canonical" href="">
+	<link href="/favicon.png" rel="shortcut icon">
+	<link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+	
+</head>
+
+<body>
+	<header id="header" class="inner"><h1><a href="/">Devork</a></h1>
+<nav id="main-nav"><ul class="main">
+	<li><a href="/">Blog</a></li>
+	<li><a href="/blog/archives">Archives</a></li>
+</ul>
+</nav>
+<nav id="mobile-nav">
+	<div class="alignleft menu">
+		<a class="button">Menu</a>
+		<div class="container"><ul class="main">
+	<li><a href="/">Blog</a></li>
+	<li><a href="/blog/archives">Archives</a></li>
+</ul>
+</div>
+	</div>
+	<div class="alignright search">
+		<a class="button"></a>
+		<div class="container">
+			<form action="http://google.com/search" method="get">
+				<input type="text" name="q" results="0">
+				<input type="hidden" name="q" value="site:devork.github.com">
+			</form>
+		</div>
+	</div>
+</nav>
+<nav id="sub-nav" class="alignright">
+	<div class="social">
+		
+		
+		
+		
+		
+		
+		
+		
+		<a class="rss" href="/atom.xml" title="RSS">RSS</a>
+		
+	</div>
+	<form class="search" action="http://google.com/search" method="get">
+		<input class="alignright" type="text" name="q" results="0">
+		<input type="hidden" name="q" value="site:devork.github.com">
+	</form>
+</nav>
+
+</header>
+	
+		
+	
+	<div id="content" class="inner"><article class="post">
+	<h1 class="title">Hillshading With Ordnance Survey Panorama Data</h1>
+	<div class="entry-content"><p>This is a guide to creating some nice hillshaded GeoTIFFs using the Ordnance Survey Panorama Opendata. This example will run through a single tile of data — in this case SZ which contains some nice hills plus coastline. Throughout this guide we’ll be using EPSG:27700 as the SRS but obviously, others can be used (for Google Maps et al - EPSG:3857). All data can be downloaded from the <a href="https://www.ordnancesurvey.co.uk/opendatadownload/products.html">Ordnance Survey website</a>.</p>
+
+<!-- more -->
+
+
+<p>For this recipe, you will need the following:</p>
+
+<ul>
+<li>The Vector Map District SZ land data shape file - SZ_Land.shp</li>
+<li>The OS Panorama datasets for SZ</li>
+</ul>
+
+
+<p>Firstly, from Panorama, create some initial GeoTiffs from the ESRI ASCII files, for example:</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"></pre></td><td class='code'><pre><code class='bash'><span class='line'>gdal_translate -a_srs EPSG:27700 sz88.asc sz88.tiff
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The following bash script will do the lot in one directory:</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"></pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="k">for </span>i in <span class="sb">`</span>ls *asc<span class="sb">`</span>; <span class="k">do </span>gdal_translate -a_srs EPSG:27700 <span class="nv">$i</span> <span class="nv">$i</span>.tiff ; <span class="k">done</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Now we merge the tiffs into one single image:</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"></pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">TIFFS</span><span class="o">=</span><span class="s1">&#39;&#39;</span>
+</span><span class='line'><span class="k">for </span>i in <span class="sb">`</span>ls *.tiff<span class="sb">`</span>; <span class="k">do </span><span class="nv">TIFFS</span><span class="o">=</span><span class="s2">&quot;$i &quot;</span><span class="nv">$TIFFS</span> ; <span class="k">done</span>
+</span><span class='line'>gdal_merge.py -o merged.tiff <span class="nv">$TIFFS</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>At this point, you can open up the tiff to see something not very interesting, but you should be able to see stuff. If you open in an image editor, be careful not to save it back as it overwrite the geo information stored in the metadata.</p>
+
+<p>The next step is to do some data resampling (<a href="http://alastaira.wordpress.com/2011/07/20/creating-hill-shaded-tile-overlays/">Creating Hillshaded Tile Overlays</a>)</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"></pre></td><td class='code'><pre><code class='bash'><span class='line'>gdalwarp <span class="se">\ </span>
+</span><span class='line'>  -dstnodata 0 <span class="se">\</span>
+</span><span class='line'>  -tr 7 7 <span class="se">\</span>
+</span><span class='line'>  -r cubicspline <span class="se">\</span>
+</span><span class='line'>  -multi -co <span class="s2">&quot;TILED=YES&quot;</span> <span class="se">\</span>
+</span><span class='line'>  merged.tiff merged.res.tiff
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Once we’ve created the higher resolution data, we run the hillshade</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"></pre></td><td class='code'><pre><code class='bash'><span class='line'>gdaldem hillshade merged.res.tiff merged.res.hs.tiff
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>You can now open the new tiff and see some lovely hillshading, although, we still need to remove the sea from the result. We do this by clipping to the coastline using our shape file (<a href="http://www.mikejcorey.com/wordpress/2011/02/05/tutorial-create-beautiful-hillshade-maps-from-digital-elevation-models-with-gdal-and-mapnik/">Create beautiful hillshade maps from digital elevation models with GDAL and Mapnik</a>).</p>
+
+<p>First off, we get the extent of the shapefile:</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"></pre></td><td class='code'><pre><code class='bash'><span class='line'>ogrinfo -al SZ_Land.shp
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>And using the extent info (for SZ should look like Extent: (400000.000000, 75255.528637) - (499024.062190, 100000.000000)) we trim the tiff:</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"></pre></td><td class='code'><pre><code class='bash'><span class='line'>gdal_translate <span class="se">\</span>
+</span><span class='line'>  -projwin 400000.000000 100000.000000 499024.062190 75255.528637 <span class="se">\</span>
+</span><span class='line'>  merged.res.hs.tiff merged.res.box.tiff
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Be aware of the order for the -projwin parameter - its not the same as reported by the extent! It requires the NW -> SE points as opposed to SW -> NE.</p>
+
+<p>And finally, the alpha:</p>
+
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"></pre></td><td class='code'><pre><code class='bash'><span class='line'>gdalwarp -dstalpha -srcnodata 0 merged.res.box.tiff merged.res.hs.final.tiff
+</span></code></pre></td></tr></table></div></figure>
+
+</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-09-01T15:27:00+01:00" pubdate data-updated="true">Sep 1<span>st</span>, 2012</time></div>
+	<div class="tags">
+
+
+	<a class='category' href='/blog/categories/gdal/'>GDAL</a>, <a class='category' href='/blog/categories/gis/'>GIS</a>, <a class='category' href='/blog/categories/hillshade/'>Hillshade</a>, <a class='category' href='/blog/categories/opendata/'>Opendata</a>, <a class='category' href='/blog/categories/ordnance-survey/'>Ordnance Survey</a>, <a class='category' href='/blog/categories/panorama/'>Panorama</a>
+
+
+</div>
+	
+</div></article>
+
+	<div class="share">
+	<div class="addthis_toolbox addthis_default_style ">
+	
+	
+	<a class="addthis_button_tweet"></a>
+	
+	
+	<a class="addthis_counter addthis_pill_style"></a>
+	</div>
+  <script type="text/javascript" src="http://s7.addthis.com/js/250/addthis_widget.js#pubid="></script>
+</div>
+
+
+</div>
+	<footer id="footer" class="inner">Copyright &copy; 2012
+
+    Alex Davies-Moore
+
+</footer>
+	<script src="/javascripts/slash.js"></script>
+<script src="/javascripts/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+	$('.fancybox').fancybox();
+})(jQuery);
+</script> <!-- Delete or comment this line to disable Fancybox -->
+
+
+
+
+
+
+</body>
+</html>
