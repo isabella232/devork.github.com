@@ -2,10 +2,10 @@
 #      Main Configs       #
 # ----------------------- #
 
-url: http://yoursite.com
-title: My Octopress Blog
+url: http://devork.github.com
+title: Devork
 subtitle: A blogging framework for hackers.
-author: Your Name
+author: Alex Davies-Moore
 simple_search: http://google.com/search
 description:
 
