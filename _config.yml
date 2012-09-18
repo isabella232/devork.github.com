@@ -7,7 +7,7 @@ title: Devork
 subtitle: A blogging framework for hackers.
 author: Alex Davies-Moore
 simple_search: http://google.com/search
-description:
+description: Development blog
 
 # Default date format is "ordinal" (resulting in "July 22nd 2007")
 # You can customize the format as defined in
@@ -19,7 +19,7 @@ date_format: "ordinal"
 subscribe_rss: /atom.xml
 subscribe_email:
 # RSS feeds can list your email address if you like
-email:
+email: hello@devork.com
 
 # ----------------------- #
 #    Jekyll & Plugins     #
@@ -89,7 +89,7 @@ delicious_user:
 delicious_count: 3
 
 # Disqus Comments
-disqus_short_name:
+disqus_short_name: devork
 disqus_show_comment_count: false
 
 # Google Analytics
