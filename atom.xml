@@ -4,7 +4,7 @@
   <title><![CDATA[Devork]]></title>
   <link href="http://devork.github.com/atom.xml" rel="self"/>
   <link href="http://devork.github.com/"/>
-  <updated>2012-10-06T12:14:21+01:00</updated>
+  <updated>2012-10-06T13:38:09+01:00</updated>
   <id>http://devork.github.com/</id>
   <author>
     <name><![CDATA[Alex Davies-Moore]]></name>
@@ -107,10 +107,18 @@
 
 <p>Be aware of the order for the -projwin parameter - its not the same as reported by the extent! It requires the NW -> SE points as opposed to SW -> NE.</p>
 
-<p>And finally, the alpha:</p>
+<p>And finally, the alpha and cropping:</p>
 
-<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"></pre></td><td class='code'><pre><code class='bash'><span class='line'>gdalwarp -dstalpha -srcnodata 0 merged.res.box.tiff merged.res.hs.final.tiff
+<figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"></pre></td><td class='code'><pre><code class='bash'><span class='line'>gdalwarp <span class="se">\ </span>
+</span><span class='line'>  -dstalpha <span class="se">\</span>
+</span><span class='line'>  -srcnodata 0 <span class="se">\</span>
+</span><span class='line'>  -dstnodata 0 <span class="se">\</span>
+</span><span class='line'>  -cutline SZ_Land.shp <span class="se">\</span>
+</span><span class='line'>  -crop_to_cutline <span class="se">\</span>
+</span><span class='line'>  merged.res.box.tiff merged.res.hs.final.tiff
 </span></code></pre></td></tr></table></div></figure>
+
+
 
 ]]></content>
   </entry>
