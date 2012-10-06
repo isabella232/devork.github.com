@@ -72,8 +72,14 @@ gdal_translate \
 
 Be aware of the order for the -projwin parameter - its not the same as reported by the extent! It requires the NW -> SE points as opposed to SW -> NE.
 
-And finally, the alpha:
+And finally, the alpha and cropping:
 
 {% codeblock lang:bash %}
-gdalwarp -dstalpha -srcnodata 0 merged.res.box.tiff merged.res.hs.final.tiff
+gdalwarp \ 
+  -dstalpha \
+  -srcnodata 0 \
+  -dstnodata 0 \
+  -cutline SZ_Land.shp \
+  -crop_to_cutline \
+  merged.res.box.tiff merged.res.hs.final.tiff
 {% endcodeblock %}
